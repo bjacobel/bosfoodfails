@@ -7,9 +7,8 @@ Uses AWS Lambda, AWS KMS and the Socrata API ([data.cityofboston.gov](https://da
 
 ####Deploy to Lambda:
 
-        pip install kappa
-        kappa config.yml create
-        kappa config.yml update_code
+        ./deploy.sh
+
 
 ####KMS secret management:
 Encrypt:
@@ -19,7 +18,7 @@ Encrypt:
 
 Decrypt:
 
-    with open('./secrets/<secretKey>', 'rb') as f:
-        print(kms.decrypt(
-            CiphertextBlob=f.read()
-            )['Plaintext'])
+        with open('./secrets/<secretKey>', 'rb') as f:
+            print(kms.decrypt(
+                CiphertextBlob=f.read()
+                )['Plaintext'])

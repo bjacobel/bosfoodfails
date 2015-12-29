@@ -13,9 +13,10 @@ config = Dict()
 
 
 def get_config():
-    session = botocore.session.get_session()
-    session.profile = 'bjacobel'
-    boto3.setup_default_session(botocore_session=session)
+    if os.getcwd() == '/Users/bjacobel/code/personal/bosfoodfails':  # Only do this in dev
+        session = botocore.session.get_session()
+        session.profile = 'bjacobel'
+        boto3.setup_default_session(botocore_session=session)
 
     kms = boto3.client('kms')
 
