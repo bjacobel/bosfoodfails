@@ -1,0 +1,4 @@
+sodapy==1.0.0
+boto3==1.2.3
+botocore==0.7.1
+addict==0.4.0
