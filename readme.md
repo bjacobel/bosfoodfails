@@ -2,12 +2,14 @@
 
 Get recent "food establishment" inspection violations and tweet them to [@bosfoodfails](https://twitter.com/bosfoodfails).
 
-Uses AWS Lambda, AWS KMS and the Socrata API ([data.cityofboston.gov](https://data.cityofboston.gov)'s Open Data vendor).
+Uses AWS Lambda, AWS KMS, AWS DynamoDB and the Socrata API ([data.cityofboston.gov](https://data.cityofboston.gov)'s Open Data vendor).
 
 
 ####Deploy to Lambda:
 
     ./deploy.sh
+
+Cron settings for event source: `cron(*/20 14-22 ? * * *)`
 
 
 ####KMS secret management:

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from addict import Dict
-from datetime import datetime
+from datetime import datetime, timedelta
 from sodapy import Socrata
 import boto3
 import botocore.session
@@ -76,7 +76,7 @@ def correct_spacing(str):
     return re.sub(' +', ' ', str)
 
 
-def handle_violation(viol):
+def format_msg(viol):
     text = u"{bn} ({address}, {city}) failed check on {date}. {desc}".format(
         bn=correct_case(viol[u'businessname']),
         address=correct_spacing(correct_case(viol[u'address'])),
@@ -91,12 +91,7 @@ def handle_violation(viol):
     if len(text) > 140:
         text = text[:139] + u'…'
 
-    if not query_dynamo(text):
-        print('Violation not found in Dynamo, saving it there and tweeting it')
-        save_dynamo(text)
-        tweet(text)
-    else:
-        print("Violation already known to Dynamo")
+    return text
 
 
 def lambda_handler(event, context):
@@ -109,12 +104,36 @@ def lambda_handler(event, context):
         password=config.SocrataPassword
     )
 
-    viols = client.get('427a-3cn5', where='violstatus = \'Fail\'', order='violdttm DESC', limit=20)
+    now = datetime.now()
+    today_begin = now - timedelta(
+        microseconds=now.microsecond,
+        seconds=now.second,
+        minutes=now.minute,
+        hours=now.hour
+    )
+    yesterday_begin = today_begin - timedelta(days=1)
+
+    where_clause = 'violstatus = \'Fail\' AND violdttm between \'{}\' and \'{}\''.format(
+        yesterday_begin.isoformat(),
+        today_begin.isoformat()
+    )
+
+    viols = client.get('427a-3cn5', where=where_clause)
 
     client.close()
 
+    print("Got {} violations".format(len(viols)))
+
     for viol in viols:
-        handle_violation(viol)
+        text = format_msg(viol)
+
+        if not query_dynamo(text):
+            print('Violation not found in Dynamo, saving it there and tweeting it')
+            save_dynamo(text)
+            tweet(text)
+            break
+        else:
+            print("Violation already known to Dynamo")
 
 if __name__ == '__main__':
     lambda_handler(None, None)
