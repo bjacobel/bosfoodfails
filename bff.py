@@ -11,10 +11,11 @@ import re
 import tweepy
 
 config = Dict()
+dev = False
 
 
 def get_config():
-    if os.getcwd() == '/Users/bjacobel/code/personal/bosfoodfails':  # Only do this in dev
+    if dev is True:
         session = botocore.session.Session(profile='bjacobel')
         boto3.setup_default_session(botocore_session=session)
 
@@ -65,7 +66,20 @@ def tweet(text):
 
     api = tweepy.API(auth)
 
-    api.update_status(text)
+    if dev is True:
+        print(u'Would tweet: {}'.format(text))
+    else:
+        api.update_status(text)
+
+
+def correct_casing(str):
+    str = titlecase(str)
+    str = re.sub(r'\bST\b', 'St.', str)
+    str = re.sub(r'\bAV\b', 'Av.', str)
+    str = re.sub(r'\bDR\b', 'Dr.', str)
+    str = re.sub(r'\bPK\b', 'Pk.', str)
+    str = re.sub(r'\bLA\b', 'La.', str)
+    return str
 
 
 def correct_spacing(str):
@@ -73,10 +87,10 @@ def correct_spacing(str):
 
 
 def format_msg(viol):
-    text = u"{bn} ({address}, {city}) failed check on {date}. {desc}".format(
-        bn=titlecase(viol[u'businessname']),
-        address=correct_spacing(titlecase(viol[u'address'])),
-        city=titlecase(viol[u'city']),
+    text = u'{bn} ({address}, {city}) failed check on {date}. {desc}'.format(
+        bn=correct_casing(viol[u'businessname']),
+        address=correct_spacing(correct_casing(viol[u'address'])),
+        city=correct_casing(viol[u'city']),
         date=datetime.strptime(viol[u'violdttm'], '%Y-%m-%dT%H:%M:%S.%f').strftime('%m/%d'),
         desc=correct_spacing(viol[u'violdesc']),
     )
@@ -118,7 +132,7 @@ def lambda_handler(event, context):
 
     client.close()
 
-    print("Got {} violations".format(len(viols)))
+    print('Got {} violations'.format(len(viols)))
 
     for viol in viols:
         text = format_msg(viol)
@@ -129,7 +143,10 @@ def lambda_handler(event, context):
             tweet(text)
             break
         else:
-            print("Violation already known to Dynamo")
+            print('Violation already known to Dynamo')
 
 if __name__ == '__main__':
+    if os.getcwd() == '/Users/bjacobel/code/personal/bosfoodfails':
+        dev = True
+
     lambda_handler(None, None)
