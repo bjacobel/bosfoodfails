@@ -3,6 +3,7 @@
 from addict import Dict
 from datetime import datetime, timedelta
 from sodapy import Socrata
+from titlecase import titlecase
 import boto3
 import botocore.session
 import os
@@ -14,8 +15,7 @@ config = Dict()
 
 def get_config():
     if os.getcwd() == '/Users/bjacobel/code/personal/bosfoodfails':  # Only do this in dev
-        session = botocore.session.get_session()
-        session.profile = 'bjacobel'
+        session = botocore.session.Session(profile='bjacobel')
         boto3.setup_default_session(botocore_session=session)
 
     kms = boto3.client('kms')
@@ -68,19 +68,15 @@ def tweet(text):
     api.update_status(text)
 
 
-def correct_case(str):
-    return str.lower().title()
-
-
 def correct_spacing(str):
     return re.sub(' +', ' ', str)
 
 
 def format_msg(viol):
     text = u"{bn} ({address}, {city}) failed check on {date}. {desc}".format(
-        bn=correct_case(viol[u'businessname']),
-        address=correct_spacing(correct_case(viol[u'address'])),
-        city=correct_case(viol[u'city']),
+        bn=titlecase(viol[u'businessname']),
+        address=correct_spacing(titlecase(viol[u'address'])),
+        city=titlecase(viol[u'city']),
         date=datetime.strptime(viol[u'violdttm'], '%Y-%m-%dT%H:%M:%S.%f').strftime('%m/%d'),
         desc=correct_spacing(viol[u'violdesc']),
     )
