@@ -1,7 +1,10 @@
 #!/bin/bash
 
-zip bff.zip bff.py
+rm bff.zip
+
+zip bff.zip ./*.py
 zip -r bff.zip ./secrets
+
 pushd ~/.virtualenvs/bosfoodfails/lib/python2.7/site-packages
 zip -r ~/code/personal/bosfoodfails/bff.zip ./*
 popd

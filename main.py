@@ -1,75 +1,13 @@
 # -*- coding: utf-8 -*-
 
-from addict import Dict
 from datetime import datetime, timedelta
 from sodapy import Socrata
 from titlecase import titlecase
-import boto3
-import botocore.session
-import os
 import re
-import tweepy
 
-config = Dict()
-dev = False
-
-
-def get_config():
-    if dev is True:
-        session = botocore.session.Session(profile='bjacobel')
-        boto3.setup_default_session(botocore_session=session)
-
-    kms = boto3.client('kms')
-
-    for secret in os.listdir('./secrets'):
-        with open('./secrets/' + secret, 'rb') as f:
-            config[secret] = kms.decrypt(
-                CiphertextBlob=f.read()
-            )['Plaintext']
-
-
-def save_dynamo(text):
-    """Save this <140 char sequence to Dynamo"""
-    dynamo = boto3.client('dynamodb')
-
-    dynamo.put_item(
-        TableName='BosFoodFails',
-        Item={
-            'text': {
-                'S': text
-            }
-        }
-    )
-
-
-def query_dynamo(text):
-    """return true if this text already exists in Dynamo"""
-    dynamo = boto3.client('dynamodb')
-
-    resp = dynamo.get_item(
-        TableName='BosFoodFails',
-        Key={
-            'text': {
-                'S': text
-            }
-        }
-    )
-
-    if 'Item' in resp and resp['Item']['text']['S'] == text:
-        return True
-    return False
-
-
-def tweet(text):
-    auth = tweepy.OAuthHandler(config.TwitterConsumerKey, config.TwitterConsumerSecret)
-    auth.set_access_token(config.TwitterAccessToken, config.TwitterAccessTokenSecret)
-
-    api = tweepy.API(auth)
-
-    if dev is True:
-        print(u'Would tweet: {}'.format(text))
-    else:
-        api.update_status(text)
+from dynamo import Dynamo
+from kms import KMS
+from twitter import Twitter
 
 
 def correct_casing(str):
@@ -104,8 +42,10 @@ def format_msg(viol):
     return text
 
 
-def lambda_handler(event, context):
-    get_config()
+def handler(event, context):
+    config = KMS()
+    db = Dynamo()
+    twitter = Twitter()
 
     client = Socrata(
         domain='data.cityofboston.gov',
@@ -137,16 +77,14 @@ def lambda_handler(event, context):
     for viol in viols:
         text = format_msg(viol)
 
-        if not query_dynamo(text):
+        if not db.query(text):
             print('Violation not found in Dynamo, saving it there and tweeting it')
-            save_dynamo(text)
-            tweet(text)
+            db.save(text)
+            twitter.tweet(text)
             break
         else:
             print('Violation already known to Dynamo')
 
-if __name__ == '__main__':
-    if os.getcwd() == '/Users/bjacobel/code/personal/bosfoodfails':
-        dev = True
 
-    lambda_handler(None, None)
+if __name__ == "__main__":
+    handler(None, None)

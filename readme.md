@@ -9,7 +9,7 @@ Uses AWS Lambda, AWS KMS, AWS DynamoDB and the Socrata API ([data.cityofboston.g
 
     ./deploy.sh
 
-Cron settings for event source: `cron(*/20 14-22 ? * * *)`
+Cron settings for event source: `cron(*/20 0-2,12-23 ? * * *)`
 
 
 ####KMS secret management:
