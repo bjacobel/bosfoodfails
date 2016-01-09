@@ -14,9 +14,10 @@ class Twitter:
         self.api = tweepy.API(auth)
         self.config = config
 
-    def tweet(self, text, lat, lon):
+    def tweet(self, text, img, lat, lon):
         if self.config.dev:
             print(u'Would tweet: {} @ ({}°, {}°)'.format(text, lat, lon))
+            img.show()
         else:
             self.api.update_status(
                 status = text,

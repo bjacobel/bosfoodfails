@@ -5,6 +5,7 @@ from sodapy import Socrata
 from titlecase import titlecase
 from pprint import pformat
 from hashlib import md5
+from PIL import Image, ImageDraw, ImageFont
 import re
 import json
 
@@ -36,21 +37,13 @@ def clean(str):
 
 
 def format_msg(viol):
-    text = u'{bn} ({address}, {city}) failed check on {date}. {desc}'.format(
+    return u'{bn} ({address}, {city}) failed {reason} check on {date}. Full comments:'.format(
         bn = clean(viol[u'businessname']),
         address = clean(viol[u'address']),
         city = clean(viol[u'city']),
         date = datetime.strptime(viol[u'violdttm'], '%Y-%m-%dT%H:%M:%S.%f').strftime('%m/%d'),
-        desc = clean(viol[u'violdesc']),
+        reason = clean(viol[u'violdesc']),
     )
-
-    if u'comments' in viol:
-        text += u": {}".format(viol[u'comments'])
-
-    if len(text) > 140:
-        text = text[:139] + u'…'
-
-    return text
 
 
 def extract_geo(viol):
@@ -58,6 +51,7 @@ def extract_geo(viol):
     lon = None
 
     if u'location' in viol:
+        # This appears to be in the API in two different structures?
         if 'longitude' in viol['location'] and 'latitude' in viol['location']:
             lat = viol[u'location'][u'latitude']
             lon = viol[u'location'][u'longitude']
@@ -66,6 +60,43 @@ def extract_geo(viol):
             lon = viol['location']['coordinates'][1]
 
     return lat, lon
+
+
+def create_img(viol):
+    if 'comments' not in viol:
+        return None
+
+    img = Image.new('RGBA', (440, 220), 'white')
+    helvneu = ImageFont.truetype(font='./HelveticaNeue-Medium.ttf', size=16)
+
+    singleline_comments = viol['comments']
+    comments = ''
+    px_across = 20
+    for word in singleline_comments.split(' '):
+        px_across += ImageDraw.Draw(img).textsize(word + ' ', helvneu)[0]
+
+        if px_across > 400:
+            px_across = 20
+            comments = comments + '\n'
+
+        comments = comments + ' ' + word
+
+    ImageDraw.Draw(img).multiline_text(
+        (20, 20),
+        comments,
+        fill='black',
+        font=helvneu,
+        spacing=6,
+        align='left'
+    )
+
+    (imgw, imgh) = ImageDraw.Draw(img).multiline_textsize(
+        text=comments,
+        font=helvneu,
+        spacing=6
+    )
+
+    return img.crop((0, 0, imgw + 40, imgh + 40))
 
 
 def hashd(viol):
@@ -110,12 +141,13 @@ def handler(event, context):
         if not db.query(viol_hash):
             print('Violation not found in Dynamo, saving it there and tweeting it')
 
-            db.save(viol_hash)
-
             text = format_msg(viol)
+            img = create_img(viol)
             (lat, lon) = extract_geo(viol)
 
-            twitter.tweet(text, lat, lon)
+            twitter.tweet(text, img, lat, lon)
+
+            db.save(viol_hash)
 
             break
         else:

@@ -11,7 +11,7 @@ class Dynamo:
         self.dynamo.put_item(
             TableName='bff2',
             Item={
-                'text': {
+                'viol_hash': {
                     'S': viol_hash
                 }
             }
@@ -23,12 +23,12 @@ class Dynamo:
         resp = self.dynamo.get_item(
             TableName='bff2',
             Key={
-                'text': {
+                'viol_hash': {
                     'S': viol_hash
                 }
             }
         )
 
-        if 'Item' in resp and resp['viol_hash']['text']['S'] == viol_hash:
+        if 'Item' in resp and resp['Item']['viol_hash']['S'] == viol_hash:
             return True
         return False
