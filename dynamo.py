@@ -5,30 +5,30 @@ class Dynamo:
     def __init__(self):
         self.dynamo = boto3.client('dynamodb')
 
-    def save(self, text):
-        """Save this <140 char sequence to Dynamo"""
+    def save(self, viol_hash):
+        """Save the hash of this violation to Dynamo"""
 
         self.dynamo.put_item(
-            TableName='BosFoodFails',
+            TableName='bff2',
             Item={
                 'text': {
-                    'S': text
+                    'S': viol_hash
                 }
             }
         )
 
-    def query(self, text):
-        """return true if this text already exists in Dynamo"""
+    def query(self, viol_hash):
+        """return true if this violation already exists in Dynamo"""
 
         resp = self.dynamo.get_item(
-            TableName='BosFoodFails',
+            TableName='bff2',
             Key={
                 'text': {
-                    'S': text
+                    'S': viol_hash
                 }
             }
         )
 
-        if 'Item' in resp and resp['Item']['text']['S'] == text:
+        if 'Item' in resp and resp['viol_hash']['text']['S'] == viol_hash:
             return True
         return False

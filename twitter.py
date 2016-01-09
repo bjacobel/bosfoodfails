@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 import tweepy
 from kms import KMS
 
@@ -12,8 +14,12 @@ class Twitter:
         self.api = tweepy.API(auth)
         self.config = config
 
-    def tweet(self, text):
+    def tweet(self, text, lat, lon):
         if self.config.dev:
-            print(u'Would tweet: {}'.format(text))
+            print(u'Would tweet: {} @ ({}°, {}°)'.format(text, lat, lon))
         else:
-            self.api.update_status(text)
+            self.api.update_status(
+                status = text,
+                lat = lat,
+                lon = lon
+            )

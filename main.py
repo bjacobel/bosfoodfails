@@ -3,7 +3,10 @@
 from datetime import datetime, timedelta
 from sodapy import Socrata
 from titlecase import titlecase
+from pprint import pformat
+from hashlib import md5
 import re
+import json
 
 from dynamo import Dynamo
 from kms import KMS
@@ -24,13 +27,21 @@ def correct_spacing(str):
     return re.sub(' +', ' ', str)
 
 
+def clean(str):
+    return correct_casing(
+        correct_spacing(
+            str
+        )
+    )
+
+
 def format_msg(viol):
     text = u'{bn} ({address}, {city}) failed check on {date}. {desc}'.format(
-        bn=correct_casing(viol[u'businessname']),
-        address=correct_spacing(correct_casing(viol[u'address'])),
-        city=correct_casing(viol[u'city']),
-        date=datetime.strptime(viol[u'violdttm'], '%Y-%m-%dT%H:%M:%S.%f').strftime('%m/%d'),
-        desc=correct_spacing(viol[u'violdesc']),
+        bn = clean(viol[u'businessname']),
+        address = clean(viol[u'address']),
+        city = clean(viol[u'city']),
+        date = datetime.strptime(viol[u'violdttm'], '%Y-%m-%dT%H:%M:%S.%f').strftime('%m/%d'),
+        desc = clean(viol[u'violdesc']),
     )
 
     if u'comments' in viol:
@@ -40,6 +51,25 @@ def format_msg(viol):
         text = text[:139] + u'…'
 
     return text
+
+
+def extract_geo(viol):
+    lat = None
+    lon = None
+
+    if u'location' in viol:
+        if 'longitude' in viol['location'] and 'latitude' in viol['location']:
+            lat = viol[u'location'][u'latitude']
+            lon = viol[u'location'][u'longitude']
+        elif 'coordinates' in viol['location']:
+            lat = viol['location']['coordinates'][0]
+            lon = viol['location']['coordinates'][1]
+
+    return lat, lon
+
+
+def hashd(viol):
+    return md5(pformat(viol)).hexdigest()
 
 
 def handler(event, context):
@@ -75,12 +105,18 @@ def handler(event, context):
     print('Got {} violations'.format(len(viols)))
 
     for viol in viols:
-        text = format_msg(viol)
+        viol_hash = hashd(viol)
 
-        if not db.query(text):
+        if not db.query(viol_hash):
             print('Violation not found in Dynamo, saving it there and tweeting it')
-            db.save(text)
-            twitter.tweet(text)
+
+            db.save(viol_hash)
+
+            text = format_msg(viol)
+            (lat, lon) = extract_geo(viol)
+
+            twitter.tweet(text, lat, lon)
+
             break
         else:
             print('Violation already known to Dynamo')
