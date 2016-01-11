@@ -37,7 +37,7 @@ def clean(str):
 
 
 def format_msg(viol):
-    return u'{bn} ({address}, {city}) failed {reason} check on {date}. Full comments:'.format(
+    return u'{bn} ({address}, {city}) failed {reason} check on {date}.'.format(
         bn = clean(viol[u'businessname']),
         address = clean(viol[u'address']),
         city = clean(viol[u'city']),
@@ -66,37 +66,52 @@ def create_img(viol):
     if 'comments' not in viol:
         return None
 
-    img = Image.new('RGBA', (440, 220), 'white')
-    helvneu = ImageFont.truetype(font='./HelveticaNeue-Medium.ttf', size=16)
+    scale_factor = 2
+    margin = 20 * scale_factor
+    base_width = 440 * scale_factor
+    base_height = 1000 * scale_factor
+    font_size = 16 * scale_factor
+    spacing = int(font_size / 2.2)
+
+    img = Image.new('RGBA', (base_width, base_height), 'white')
+    helvneu = ImageFont.truetype(font='./HelveticaNeue-Regular.ttf', size=font_size)
 
     singleline_comments = viol['comments']
     comments = ''
-    px_across = 20
+    px_across = margin
     for word in singleline_comments.split(' '):
         px_across += ImageDraw.Draw(img).textsize(word + ' ', helvneu)[0]
 
-        if px_across > 400:
-            px_across = 20
+        if px_across > (base_width - 2 * margin):
+            px_across = margin
             comments = comments + '\n'
 
         comments = comments + ' ' + word
 
     ImageDraw.Draw(img).multiline_text(
-        (20, 20),
+        (margin, margin),
         comments,
         fill='black',
         font=helvneu,
-        spacing=6,
+        spacing=spacing,
         align='left'
     )
 
-    (imgw, imgh) = ImageDraw.Draw(img).multiline_textsize(
+    (text_w, text_h) = ImageDraw.Draw(img).multiline_textsize(
         text=comments,
         font=helvneu,
-        spacing=6
+        spacing=spacing
     )
 
-    return img.crop((0, 0, imgw + 40, imgh + 40))
+    img = img.crop((0, 0, base_width, text_h + 2 * margin))
+
+    if scale_factor > 1:
+        img = img.resize(
+            (base_width / scale_factor, img.height / scale_factor),
+            Image.BICUBIC
+        )
+
+    return img
 
 
 def hashd(viol):
@@ -122,7 +137,7 @@ def handler(event, context):
         minutes=now.minute,
         hours=now.hour
     )
-    yesterday_begin = today_begin - timedelta(days=1)
+    yesterday_begin = today_begin - timedelta(days=2)
 
     where_clause = 'violstatus = \'Fail\' AND violdttm between \'{}\' and \'{}\''.format(
         yesterday_begin.isoformat(),
@@ -147,7 +162,7 @@ def handler(event, context):
 
             twitter.tweet(text, img, lat, lon)
 
-            db.save(viol_hash)
+            db.save(viol_hash, viol['violdttm'], viol['licenseno'])
 
             break
         else:

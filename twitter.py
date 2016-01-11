@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 
-import tweepy
+from twython import Twython
+from StringIO import StringIO
+
 from kms import KMS
 
 
@@ -8,19 +10,29 @@ class Twitter:
     def __init__(self):
         config = KMS()
 
-        auth = tweepy.OAuthHandler(config.TwitterConsumerKey, config.TwitterConsumerSecret)
-        auth.set_access_token(config.TwitterAccessToken, config.TwitterAccessTokenSecret)
+        self.twitter = Twython(
+            config.TwitterConsumerKey,
+            config.TwitterConsumerSecret,
+            config.TwitterAccessToken,
+            config.TwitterAccessTokenSecret
+        )
 
-        self.api = tweepy.API(auth)
         self.config = config
 
     def tweet(self, text, img, lat, lon):
         if self.config.dev:
-            print(u'Would tweet: {} @ ({}°, {}°)'.format(text, lat, lon))
-            img.show()
-        else:
-            self.api.update_status(
-                status = text,
-                lat = lat,
-                lon = lon
-            )
+            print(u'Tweeting to dev acct: {} @ ({}°, {}°)'.format(text, lat, lon))
+
+        image_io = StringIO()
+        img.save(image_io, 'PNG')
+        image_io.seek(0)
+
+        img_response = self.twitter.upload_media(media=image_io)
+
+        self.twitter.update_status(
+            status=text,
+            lat=lat,
+            long=lon,
+            display_coordinates=True,
+            media_ids=[img_response['media_id']]
+        )

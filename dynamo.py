@@ -1,18 +1,29 @@
 import boto3
+import time
+from datetime import datetime
 
 
 class Dynamo:
     def __init__(self):
         self.dynamo = boto3.client('dynamodb')
 
-    def save(self, viol_hash):
-        """Save the hash of this violation to Dynamo"""
+    def save(self, viol_hash, violdttm, vendor_id):
+        """Save info about this violation to Dynamo"""
+
+        violdttm_parsed = datetime.strptime(violdttm, '%Y-%m-%dT%H:%M:%S.%f')
+        violdttm_timestamp = time.mktime(violdttm_parsed.timetuple())
 
         self.dynamo.put_item(
             TableName='bff2',
             Item={
                 'viol_hash': {
                     'S': viol_hash
+                },
+                'timestamp': {
+                    'N': str(violdttm_timestamp)
+                },
+                'license': {
+                    'N': str(vendor_id)
                 }
             }
         )
