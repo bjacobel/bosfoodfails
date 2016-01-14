@@ -5,13 +5,13 @@ from sodapy import Socrata
 from titlecase import titlecase
 from pprint import pformat
 from hashlib import md5
-from PIL import Image, ImageDraw, ImageFont
+from random import shuffle
 import re
-import json
 
 from dynamo import Dynamo
 from kms import KMS
 from twitter import Twitter
+from google import GSV
 
 
 def correct_casing(str):
@@ -46,6 +46,11 @@ def format_msg(viol):
     )
 
 
+def create_img(viol):
+    maps = GSV("{} {} {} USA".format(viol[u'businessname'], viol[u'address'], viol[u'city']))
+    return maps.get_file()
+
+
 def extract_geo(viol):
     lat = None
     lon = None
@@ -60,58 +65,6 @@ def extract_geo(viol):
             lon = viol['location']['coordinates'][1]
 
     return lat, lon
-
-
-def create_img(viol):
-    if 'comments' not in viol:
-        return None
-
-    scale_factor = 2
-    margin = 20 * scale_factor
-    base_width = 440 * scale_factor
-    base_height = 1000 * scale_factor
-    font_size = 16 * scale_factor
-    spacing = int(font_size / 2.2)
-
-    img = Image.new('RGBA', (base_width, base_height), 'white')
-    helvneu = ImageFont.truetype(font='./HelveticaNeue-Regular.ttf', size=font_size)
-
-    singleline_comments = viol['comments']
-    comments = ''
-    px_across = margin
-    for word in singleline_comments.split(' '):
-        px_across += ImageDraw.Draw(img).textsize(word + ' ', helvneu)[0]
-
-        if px_across > (base_width - 2 * margin):
-            px_across = margin
-            comments = comments + '\n'
-
-        comments = comments + ' ' + word
-
-    ImageDraw.Draw(img).multiline_text(
-        (margin, margin),
-        comments,
-        fill='black',
-        font=helvneu,
-        spacing=spacing,
-        align='left'
-    )
-
-    (text_w, text_h) = ImageDraw.Draw(img).multiline_textsize(
-        text=comments,
-        font=helvneu,
-        spacing=spacing
-    )
-
-    img = img.crop((0, 0, base_width, text_h + 2 * margin))
-
-    if scale_factor > 1:
-        img = img.resize(
-            (base_width / scale_factor, img.height / scale_factor),
-            Image.BICUBIC
-        )
-
-    return img
 
 
 def hashd(viol):
@@ -137,7 +90,7 @@ def handler(event, context):
         minutes=now.minute,
         hours=now.hour
     )
-    yesterday_begin = today_begin - timedelta(days=2)
+    yesterday_begin = today_begin - timedelta(days=1)
 
     where_clause = 'violstatus = \'Fail\' AND violdttm between \'{}\' and \'{}\''.format(
         yesterday_begin.isoformat(),
@@ -149,6 +102,9 @@ def handler(event, context):
     client.close()
 
     print('Got {} violations'.format(len(viols)))
+
+    # Seeing the same streetview pic over and over will be boring, so mix 'em up
+    shuffle(viols)
 
     for viol in viols:
         viol_hash = hashd(viol)

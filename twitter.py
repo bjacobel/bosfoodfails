@@ -23,11 +23,7 @@ class Twitter:
         if self.config.dev:
             print(u'Tweeting to dev acct: {} @ ({}°, {}°)'.format(text, lat, lon))
 
-        image_io = StringIO()
-        img.save(image_io, 'PNG')
-        image_io.seek(0)
-
-        img_response = self.twitter.upload_media(media=image_io)
+        img_response = self.twitter.upload_media(media=img)
 
         self.twitter.update_status(
             status=text,
