@@ -23,12 +23,20 @@ class Twitter:
         if self.config.dev:
             print(u'Tweeting to dev acct: {} @ ({}°, {}°)'.format(text, lat, lon))
 
-        img_response = self.twitter.upload_media(media=img)
+        if img:
+            img_response = self.twitter.upload_media(media=img)
 
-        self.twitter.update_status(
-            status=text,
-            lat=lat,
-            long=lon,
-            display_coordinates=True,
-            media_ids=[img_response['media_id']]
-        )
+            self.twitter.update_status(
+                status=text,
+                lat=lat,
+                long=lon,
+                display_coordinates=True,
+                media_ids=[img_response['media_id']]
+            )
+        else:
+            self.twitter.update_status(
+                status=text,
+                lat=lat,
+                long=lon,
+                display_coordinates=True
+            )

@@ -46,9 +46,20 @@ def format_msg(viol):
     )
 
 
-def create_img(viol):
-    maps = GSV("{} {} {} USA".format(viol[u'businessname'], viol[u'address'], viol[u'city']))
-    return maps.get_file()
+def get_img(viol, lat, lon):
+    maps = GSV(
+        location_name = "{} {} {}".format(
+            viol[u'businessname'],
+            viol[u'address'],
+            viol[u'city']
+        ),
+        lat = lat,
+        lon = lon
+    )
+    try:
+        return maps.get_file()
+    except Exception as e:
+        print(e)
 
 
 def extract_geo(viol):
@@ -61,8 +72,8 @@ def extract_geo(viol):
             lat = viol[u'location'][u'latitude']
             lon = viol[u'location'][u'longitude']
         elif 'coordinates' in viol['location']:
-            lat = viol['location']['coordinates'][0]
-            lon = viol['location']['coordinates'][1]
+            lat = viol['location']['coordinates'][1]
+            lon = viol['location']['coordinates'][0]
 
     return lat, lon
 
@@ -113,8 +124,8 @@ def handler(event, context):
             print('Violation not found in Dynamo, saving it there and tweeting it')
 
             text = format_msg(viol)
-            img = create_img(viol)
             (lat, lon) = extract_geo(viol)
+            img = get_img(viol, lat, lon)
 
             twitter.tweet(text, img, lat, lon)
 
