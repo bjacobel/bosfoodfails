@@ -23,6 +23,8 @@ class KMS:
                     CiphertextBlob=f.read()
                 )['Plaintext'])
 
+        self.DynamoTableName = 'bff'
+
         # not encrypted, .gitignored
         if self.dev:
             with open(cwd + '/secrets/dev/TwitterAccessToken', 'r') as f:
@@ -33,3 +35,5 @@ class KMS:
                 self.TwitterConsumerKey = f.read().rstrip()
             with open(cwd + '/secrets/dev/TwitterConsumerSecret', 'r') as f:
                 self.TwitterConsumerSecret = f.read().rstrip()
+
+            self.DynamoTableName = 'bff2'

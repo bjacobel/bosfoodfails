@@ -2,10 +2,13 @@ import boto3
 import time
 from datetime import datetime
 
+from kms import KMS
+
 
 class Dynamo:
     def __init__(self):
         self.dynamo = boto3.client('dynamodb')
+        self.config = KMS()
 
     def save(self, viol_hash, violdttm, vendor_id):
         """Save info about this violation to Dynamo"""
@@ -14,7 +17,7 @@ class Dynamo:
         violdttm_timestamp = time.mktime(violdttm_parsed.timetuple())
 
         self.dynamo.put_item(
-            TableName='bff2',
+            TableName=self.config.DynamoTableName,
             Item={
                 'viol_hash': {
                     'S': viol_hash
@@ -32,7 +35,7 @@ class Dynamo:
         """return true if this violation already exists in Dynamo"""
 
         resp = self.dynamo.get_item(
-            TableName='bff2',
+            TableName=self.config.DynamoTableName,
             Key={
                 'viol_hash': {
                     'S': viol_hash
@@ -48,7 +51,7 @@ class Dynamo:
         """return number of known violations under this license number"""
 
         resp = self.dynamo.query(
-            TableName='bff2',
+            TableName=self.config.DynamoTableName,
             IndexName='license-index',
             KeyConditionExpression='license = :license',
             ExpressionAttributeValues={
