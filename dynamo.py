@@ -23,7 +23,7 @@ class Dynamo:
                     'N': str(violdttm_timestamp)
                 },
                 'license': {
-                    'N': str(vendor_id)
+                    'S': str(vendor_id)
                 }
             }
         )
@@ -43,3 +43,19 @@ class Dynamo:
         if 'Item' in resp and resp['Item']['viol_hash']['S'] == viol_hash:
             return True
         return False
+
+    def count(self, license):
+        """return number of known violations under this license number"""
+
+        resp = self.dynamo.query(
+            TableName='bff2',
+            IndexName='license-index',
+            KeyConditionExpression='license = :license',
+            ExpressionAttributeValues={
+                ':license': {
+                    'S': license
+                }
+            }
+        )
+
+        return resp['Count']

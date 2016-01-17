@@ -36,13 +36,17 @@ def clean(str):
     )
 
 
-def format_msg(viol):
-    return u'{bn} ({address}, {city}) failed {reason} check on {date}.'.format(
+def ordinal(n):
+    return "%d%s" % (n, "tsnrhtdd"[(n / 10 % 10 != 1) * (n % 10 < 4) * n % 10::4])
+
+
+def format_msg(viol, count):
+    return u'{bn} ({address}, {city}) failed check on {date}, their {ord} this year.'.format(
         bn = clean(viol[u'businessname']),
         address = clean(viol[u'address']),
         city = clean(viol[u'city']),
         date = datetime.strptime(viol[u'violdttm'], '%Y-%m-%dT%H:%M:%S.%f').strftime('%m/%d'),
-        reason = clean(viol[u'violdesc']),
+        ord = ordinal(count + 1)
     )
 
 
@@ -101,7 +105,7 @@ def handler(event, context):
         minutes=now.minute,
         hours=now.hour
     )
-    yesterday_begin = today_begin - timedelta(days=1)
+    yesterday_begin = today_begin - timedelta(days=2)
 
     where_clause = 'violstatus = \'Fail\' AND violdttm between \'{}\' and \'{}\''.format(
         yesterday_begin.isoformat(),
@@ -123,7 +127,8 @@ def handler(event, context):
         if not db.query(viol_hash):
             print('Violation not found in Dynamo, saving it there and tweeting it')
 
-            text = format_msg(viol)
+            count = db.count(viol['licenseno'])
+            text = format_msg(viol, count)
             (lat, lon) = extract_geo(viol)
             img = get_img(viol, lat, lon)
 
