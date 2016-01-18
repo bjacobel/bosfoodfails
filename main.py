@@ -11,7 +11,7 @@ import re
 from dynamo import Dynamo
 from kms import KMS
 from twitter import Twitter
-from google import GSV
+from fs import Fs  # sorry this was bad but the foursquare client library I'm using already used the full name
 
 
 def correct_casing(str):
@@ -50,22 +50,6 @@ def format_msg(viol, count):
     )
 
 
-def get_img(viol, lat, lon):
-    maps = GSV(
-        location_name = "{} {} {}".format(
-            viol[u'businessname'],
-            viol[u'address'],
-            viol[u'city']
-        ),
-        lat = lat,
-        lon = lon
-    )
-    try:
-        return maps.get_file()
-    except Exception as e:
-        print(e)
-
-
 def extract_geo(viol):
     lat = None
     lon = None
@@ -88,8 +72,9 @@ def hashd(viol):
 
 def handler(event, context):
     config = KMS()
-    db = Dynamo()
-    twitter = Twitter()
+    db = Dynamo(config)
+    twitter = Twitter(config)
+    foursquare = Fs(config)
 
     client = Socrata(
         domain='data.cityofboston.gov',
@@ -130,9 +115,19 @@ def handler(event, context):
             count = db.count(viol['licenseno'])
             text = format_msg(viol, count)
             (lat, lon) = extract_geo(viol)
-            img = get_img(viol, lat, lon)
 
-            twitter.tweet(text, img, lat, lon)
+            place = foursquare.place_search(
+                name=viol['businessname'],
+                lat=lat,
+                lon=lon
+            )
+
+            photo = None
+
+            if place:
+                photo = foursquare.random_photo(place)
+
+            twitter.tweet(text, photo, lat, lon)
 
             db.save(viol_hash, viol['violdttm'], viol['licenseno'])
 

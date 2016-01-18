@@ -2,13 +2,11 @@ import boto3
 import time
 from datetime import datetime
 
-from kms import KMS
-
 
 class Dynamo:
-    def __init__(self):
+    def __init__(self, config):
+        self.config = config
         self.dynamo = boto3.client('dynamodb')
-        self.config = KMS()
 
     def save(self, viol_hash, violdttm, vendor_id):
         """Save info about this violation to Dynamo"""
