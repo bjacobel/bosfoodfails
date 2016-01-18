@@ -40,13 +40,20 @@ def ordinal(n):
     return "%d%s" % (n, "tsnrhtdd"[(n / 10 % 10 != 1) * (n % 10 < 4) * n % 10::4])
 
 
-def format_msg(viol, count):
-    return u'{bn} ({address}, {city}) failed check on {date}, their {ord} this year.'.format(
+def format_url(viol):
+    return (
+        "http://jsoneditoronline.org/?url="
+        "https://data.cityofboston.gov/resource/427a-3cn5/{}.json".format(viol[':id'])
+    )
+
+
+def format_msg(viol, count, reason_url):
+    return u'{bn} ({address}, {city}) failed check for the {ord} time. Details: {url}'.format(
         bn = clean(viol[u'businessname']),
         address = clean(viol[u'address']),
         city = clean(viol[u'city']),
-        date = datetime.strptime(viol[u'violdttm'], '%Y-%m-%dT%H:%M:%S.%f').strftime('%m/%d'),
-        ord = ordinal(count + 1)
+        ord = ordinal(count + 1),
+        url = reason_url
     )
 
 
@@ -90,14 +97,14 @@ def handler(event, context):
         minutes=now.minute,
         hours=now.hour
     )
-    yesterday_begin = today_begin - timedelta(days=1)
+    yesterday_begin = today_begin - timedelta(days=3)
 
     where_clause = 'violstatus = \'Fail\' AND violdttm between \'{}\' and \'{}\''.format(
         yesterday_begin.isoformat(),
         today_begin.isoformat()
     )
 
-    viols = client.get('427a-3cn5', where=where_clause)
+    viols = client.get('427a-3cn5', where=where_clause, select=":*, *")
 
     client.close()
 
@@ -113,7 +120,8 @@ def handler(event, context):
             print('Violation not found in Dynamo, saving it there and tweeting it')
 
             count = db.count(viol['licenseno'])
-            text = format_msg(viol, count)
+            url = format_url(viol)
+            text = format_msg(viol, count, url)
             (lat, lon) = extract_geo(viol)
 
             place = foursquare.place_search(
