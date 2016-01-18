@@ -97,7 +97,7 @@ def handler(event, context):
         minutes=now.minute,
         hours=now.hour
     )
-    yesterday_begin = today_begin - timedelta(days=3)
+    yesterday_begin = today_begin - timedelta(days=1)
 
     where_clause = 'violstatus = \'Fail\' AND violdttm between \'{}\' and \'{}\''.format(
         yesterday_begin.isoformat(),
