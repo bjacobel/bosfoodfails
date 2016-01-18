@@ -3,8 +3,6 @@
 from datetime import datetime, timedelta
 from sodapy import Socrata
 from titlecase import titlecase
-from pprint import pformat
-from hashlib import md5
 from random import shuffle
 import re
 
@@ -73,23 +71,7 @@ def extract_geo(viol):
     return lat, lon
 
 
-def hashd(viol):
-    return md5(pformat(viol)).hexdigest()
-
-
-def handler(event, context):
-    config = KMS()
-    db = Dynamo(config)
-    twitter = Twitter(config)
-    foursquare = Fs(config)
-
-    client = Socrata(
-        domain='data.cityofboston.gov',
-        app_token=config.SocrataAppToken,
-        username='bjacobel@gmail.com',
-        password=config.SocrataPassword
-    )
-
+def get_viols(client):
     now = datetime.now()
     today_begin = now - timedelta(
         microseconds=now.microsecond,
@@ -106,17 +88,33 @@ def handler(event, context):
 
     viols = client.get('427a-3cn5', where=where_clause, select=":*, *")
 
-    client.close()
-
     print('Got {} violations'.format(len(viols)))
 
-    # Seeing the same streetview pic over and over will be boring, so mix 'em up
     shuffle(viols)
 
-    for viol in viols:
-        viol_hash = hashd(viol)
+    return viols
 
-        if not db.query(viol_hash):
+
+def handler(event, context):
+    config = KMS()
+    db = Dynamo(config)
+    twitter = Twitter(config)
+    foursquare = Fs(config)
+
+    client = Socrata(
+        domain='data.cityofboston.gov',
+        app_token=config.SocrataAppToken,
+        username='bjacobel@gmail.com',
+        password=config.SocrataPassword
+    )
+
+    viols = get_viols(client)
+
+    client.close()
+
+    for viol in viols:
+
+        if not db.query(viol[':id']):
             print('Violation not found in Dynamo, saving it there and tweeting it')
 
             count = db.count(viol['licenseno'])
@@ -137,7 +135,7 @@ def handler(event, context):
 
             twitter.tweet(text, photo, lat, lon)
 
-            db.save(viol_hash, viol['violdttm'], viol['licenseno'])
+            db.save(viol[':id'], viol['licenseno'])
 
             break
         else:

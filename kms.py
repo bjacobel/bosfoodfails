@@ -23,7 +23,7 @@ class KMS:
                     CiphertextBlob=f.read()
                 )['Plaintext'])
 
-        self.DynamoTableName = 'bff'
+        self.DynamoTableName = 'bosfoodfails'
 
         # not encrypted, .gitignored
         if self.dev:
@@ -36,4 +36,4 @@ class KMS:
             with open(cwd + '/secrets/dev/TwitterConsumerSecret', 'r') as f:
                 self.TwitterConsumerSecret = f.read().rstrip()
 
-            self.DynamoTableName = 'bff2'
+            self.DynamoTableName = 'bosfoodfails-dev'

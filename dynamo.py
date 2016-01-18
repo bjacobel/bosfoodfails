@@ -8,40 +8,34 @@ class Dynamo:
         self.config = config
         self.dynamo = boto3.client('dynamodb')
 
-    def save(self, viol_hash, violdttm, vendor_id):
+    def save(self, viol_id, license):
         """Save info about this violation to Dynamo"""
-
-        violdttm_parsed = datetime.strptime(violdttm, '%Y-%m-%dT%H:%M:%S.%f')
-        violdttm_timestamp = time.mktime(violdttm_parsed.timetuple())
 
         self.dynamo.put_item(
             TableName=self.config.DynamoTableName,
             Item={
-                'viol_hash': {
-                    'S': viol_hash
-                },
-                'timestamp': {
-                    'N': str(violdttm_timestamp)
+                'id': {
+                    'S': viol_id
                 },
                 'license': {
-                    'S': str(vendor_id)
+                    'S': license
                 }
             }
         )
 
-    def query(self, viol_hash):
+    def query(self, viol_id):
         """return true if this violation already exists in Dynamo"""
 
         resp = self.dynamo.get_item(
             TableName=self.config.DynamoTableName,
             Key={
-                'viol_hash': {
-                    'S': viol_hash
+                'id': {
+                    'S': viol_id
                 }
             }
         )
 
-        if 'Item' in resp and resp['Item']['viol_hash']['S'] == viol_hash:
+        if 'Item' in resp and resp['Item']['id']['S'] == viol_id:
             return True
         return False
 
