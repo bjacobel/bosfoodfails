@@ -1,0 +1,46 @@
+{
+  "name": "bff-client",
+  "version": "0.0.1",
+  "description": "Viewer for @bosfoodfails socrata json",
+  "main": "index.js",
+  "scripts": {
+    "start": "webpack-dev-server --hot",
+    "build": "NODE_ENV=production webpack --progress -c --optimize-minimize",
+    "lint": "eslint --ext='.js,.jsx' . && sass-lint -v"
+  },
+  "author": "Brian Jacobel",
+  "license": "MIT",
+  "private": false,
+  "repository": "https://github.com/bjacobel/bosfoodfails",
+  "dependencies": {
+    "babel-core": "^6.3.17",
+    "babel-loader": "^6.2.0",
+    "babel-preset-es2015": "^6.3.13",
+    "babel-preset-react": "^6.3.13",
+    "babel-runtime": "^6.3.13",
+    "css-loader": "^0.23.0",
+    "eslint": "^1.10.3",
+    "eslint-config-airbnb": "^2.0.0",
+    "eslint-plugin-react": "^3.11.3",
+    "extract-text-webpack-plugin": "^0.9.1",
+    "file-loader": "^0.8.5",
+    "isomorphic-fetch": "^2.2.0",
+    "jsdom": "^6.5.1",
+    "node-sass": "^3.4.2",
+    "react": "^0.14.3",
+    "react-dom": "^0.14.3",
+    "react-redux": "^4.0.0",
+    "redux": "^3.0.4",
+    "redux-thunk": "^1.0.0",
+    "sass-lint": "^1.4.0",
+    "sass-loader": "^3.1.2",
+    "style-loader": "^0.13.0",
+    "webpack": "^1.12.9",
+    "webpack-dev-server": "^1.14.0"
+  },
+  "devDependencies": {
+    "redux-devtools": "^3.0.0",
+    "redux-devtools-dock-monitor": "^1.0.1",
+    "redux-devtools-log-monitor": "^1.0.1"
+  }
+}
