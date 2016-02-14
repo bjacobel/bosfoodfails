@@ -7,10 +7,6 @@ class KMS:
     def __init__(self):
         self.dev = os.getcwd() == '/Users/bjacobel/code/personal/bosfoodfails'
 
-        if self.dev:
-            session = botocore.session.Session(profile='bjacobel')
-            boto3.setup_default_session(botocore_session=session)
-
         kms = boto3.client('kms')
         cwd = os.getcwd()
 

@@ -39,7 +39,7 @@ def ordinal(n):
 
 
 def format_url(viol):
-    return "https://bosfoodfails.bjacobel/com/#/{}".format(viol[':id'])
+    return "https://bosfoodfails.bjacobel.com/#/{}".format(viol[':id'])
 
 
 def format_msg(viol, count, reason_url):
@@ -76,7 +76,7 @@ def get_viols(client):
         minutes=now.minute,
         hours=now.hour
     )
-    yesterday_begin = today_begin - timedelta(days=1)
+    yesterday_begin = today_begin - timedelta(days=3)
 
     where_clause = 'violstatus = \'Fail\' AND violdttm between \'{}\' and \'{}\''.format(
         yesterday_begin.isoformat(),
