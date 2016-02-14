@@ -39,10 +39,7 @@ def ordinal(n):
 
 
 def format_url(viol):
-    return (
-        "http://jsoneditoronline.org/?url="
-        "https://data.cityofboston.gov/resource/427a-3cn5/{}.json".format(viol[':id'])
-    )
+    return "https://bosfoodfails.bjacobel/com/#/{}".format(viol[':id'])
 
 
 def format_msg(viol, count, reason_url):
