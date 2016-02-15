@@ -78,7 +78,11 @@ def get_viols(client):
     )
     yesterday_begin = today_begin - timedelta(days=1)
 
-    where_clause = 'violstatus = \'Fail\' AND violdttm between \'{}\' and \'{}\''.format(
+    where_clause = (
+        'violstatus = \'Fail\' AND '
+        'violdttm between \'{}\' and \'{}\' AND '
+        'viollevel in("**", "***")'
+    ).format(
         yesterday_begin.isoformat(),
         today_begin.isoformat()
     )
