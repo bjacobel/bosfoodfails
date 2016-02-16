@@ -8,6 +8,7 @@ import re
 
 from dynamo import Dynamo
 from kms import KMS
+from sqs import SQS
 from twitter import Twitter
 from fs import Fs  # sorry this was bad but the foursquare client library I'm using already used the full name
 
@@ -99,7 +100,7 @@ def get_viols(client):
 def handler(event, context):
     config = KMS()
     db = Dynamo(config)
-    twitter = Twitter(config)
+    sqs = SQS(config)
     foursquare = Fs(config)
 
     client = Socrata(
@@ -116,7 +117,6 @@ def handler(event, context):
     for viol in viols:
 
         if not db.query(viol[':id']):
-            print('Violation not found in Dynamo, saving it there and tweeting it')
 
             count = db.count(viol['licenseno'])
             url = format_url(viol)
@@ -132,13 +132,11 @@ def handler(event, context):
             photo = None
 
             if place:
-                photo = foursquare.random_photo(place)
+                photo_url = foursquare.random_photo_url(place)
 
-            twitter.tweet(text, photo, lat, lon)
+            sqs.push(viol[':id'], text, photo_url, lat, lon)
 
             db.save(viol[':id'], viol['licenseno'])
-
-            break
         else:
             print('Violation already known to Dynamo')
 

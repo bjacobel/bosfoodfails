@@ -4,6 +4,8 @@ from twython import Twython
 from twython.exceptions import TwythonError
 from StringIO import StringIO
 
+from fs import Fs
+
 
 class Twitter:
     def __init__(self, config):
@@ -16,6 +18,8 @@ class Twitter:
             config.TwitterAccessTokenSecret
         )
 
+        self.foursquare = Fs(config)
+
         self.config = config
 
     def tweet(self, text, img, lat, lon):
@@ -26,7 +30,8 @@ class Twitter:
 
         try:
             if img:
-                img_response = self.twitter.upload_media(media=img)
+                img_obj = self.foursquare.photo_from_url(img)
+                img_response = self.twitter.upload_media(media=img_obj)
 
                 self.twitter.update_status(
                     status=text,
