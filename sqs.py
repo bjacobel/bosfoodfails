@@ -23,10 +23,10 @@ class SQS:
         self.queue.send_message(MessageBody=id, MessageAttributes=attributes)
 
     def pop(self):
-        tweet = self.queue.receive_messages(
+        tweets = self.queue.receive_messages(
             MessageAttributeNames=['*']
-        )[0]
+        )
 
-        if tweet:
-            return tweet
+        if tweets:
+            return tweets[0]
         return None
