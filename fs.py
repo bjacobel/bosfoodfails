@@ -35,7 +35,7 @@ class Fs:
         else:
             return None
 
-    def random_photo(self, place):
+    def random_photo_url(self, place):
         photos = self.client.venues.photos(place['id'], params={
             'limit': 200
         })
@@ -43,13 +43,15 @@ class Fs:
         if len(photos['photos']['items']) > 0:
             photo = choice(photos['photos']['items'])
 
-            photo_url = "{}width500{}".format(photo['prefix'], photo['suffix'])
-
-            resp = requests.get(photo_url, stream=True)
-
-            if resp.ok:
-                return BytesIO(resp.content)
-            else:
-                print("Couldn't save photo: " + resp.reason)
+            return "{}width500{}".format(photo['prefix'], photo['suffix'])
 
         return None
+
+    def photo_from_url(self, photo_url):
+        resp = requests.get(photo_url, stream=True)
+
+        if resp.ok:
+            return BytesIO(resp.content)
+        else:
+            print("Couldn't save photo: " + resp.reason)
+            return None
