@@ -2,10 +2,7 @@
 
 from twython import Twython
 from twython.exceptions import TwythonError
-from StringIO import StringIO
-
 from fs import Fs
-
 
 class Twitter:
     def __init__(self, config):
@@ -19,8 +16,6 @@ class Twitter:
         )
 
         self.foursquare = Fs(config)
-
-        self.config = config
 
     def tweet(self, text, img, lat, lon):
         if self.config.dev:

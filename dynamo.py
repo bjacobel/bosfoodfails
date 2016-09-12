@@ -1,14 +1,11 @@
 import boto3
-import time
-from datetime import datetime
-
 
 class Dynamo:
     def __init__(self, config):
         self.config = config
         self.dynamo = boto3.client('dynamodb')
 
-    def save(self, viol_id, license):
+    def save(self, viol_id, license_id):
         """Save info about this violation to Dynamo"""
 
         self.dynamo.put_item(
@@ -18,7 +15,7 @@ class Dynamo:
                     'S': viol_id
                 },
                 'license': {
-                    'S': license
+                    'S': license_id
                 }
             }
         )
@@ -39,7 +36,7 @@ class Dynamo:
             return True
         return False
 
-    def count(self, license):
+    def count(self, license_id):
         """return number of known violations under this license number"""
 
         resp = self.dynamo.query(
@@ -48,7 +45,7 @@ class Dynamo:
             KeyConditionExpression='license = :license',
             ExpressionAttributeValues={
                 ':license': {
-                    'S': license
+                    'S': license_id
                 }
             }
         )

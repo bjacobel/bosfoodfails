@@ -1,10 +1,9 @@
 import boto3
 import os
 
-
 class KMS:
     def __init__(self):
-        self.dev = os.getcwd() == '/Users/bjacobel/code/personal/bosfoodfails'
+        self.dev = os.getcwd() == '/Users/bjacobel/code/bosfoodfails'
 
         kms = boto3.client('kms')
         cwd = os.getcwd()
@@ -18,17 +17,15 @@ class KMS:
                     CiphertextBlob=f.read()
                 )['Plaintext'])
 
-        self.SQSQueueName = self.DynamoTableName = 'bosfoodfails'
+        # overwrite any real credentials with things you find in /secrets/dev
+        # these are kept out of the lambda build
+        for secret in os.listdir('{}/secrets/dev'.format(cwd)):
+            with open('{}/secrets/dev/{}'.format(cwd, secret), 'rb') as f:
+                setattr(self, secret, kms.decrypt(
+                    CiphertextBlob=f.read()
+                )['Plaintext'])
 
-        # not encrypted, .gitignored
+        self.DynamoTableName = 'bosfoodfails'
+
         if self.dev:
-            with open(cwd + '/secrets/dev/TwitterAccessToken', 'r') as f:
-                self.TwitterAccessToken = f.read().rstrip()
-            with open(cwd + '/secrets/dev/TwitterAccessTokenSecret', 'r') as f:
-                self.TwitterAccessTokenSecret = f.read().rstrip()
-            with open(cwd + '/secrets/dev/TwitterConsumerKey', 'r') as f:
-                self.TwitterConsumerKey = f.read().rstrip()
-            with open(cwd + '/secrets/dev/TwitterConsumerSecret', 'r') as f:
-                self.TwitterConsumerSecret = f.read().rstrip()
-
-            self.SQSQueueName = self.DynamoTableName = 'bosfoodfails-dev'
+            self.DynamoTableName = 'bosfoodfails-dev'

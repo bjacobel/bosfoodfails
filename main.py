@@ -8,29 +8,28 @@ import re
 
 from dynamo import Dynamo
 from kms import KMS
-from sqs import SQS
 from twitter import Twitter
 from fs import Fs  # sorry this was bad but the foursquare client library I'm using already used the full name
 
 
-def correct_casing(str):
-    str = titlecase(str)
-    str = re.sub(r'\bST\b', 'St.', str)
-    str = re.sub(r'\bAV\b', 'Av.', str)
-    str = re.sub(r'\bDR\b', 'Dr.', str)
-    str = re.sub(r'\bPK\b', 'Pk.', str)
-    str = re.sub(r'\bLA\b', 'La.', str)
-    return str
+def correct_casing(string):
+    string = titlecase(string)
+    string = re.sub(r'\bST\b', 'St.', string)
+    string = re.sub(r'\bAV\b', 'Av.', string)
+    string = re.sub(r'\bDR\b', 'Dr.', string)
+    string = re.sub(r'\bPK\b', 'Pk.', string)
+    string = re.sub(r'\bLA\b', 'La.', string)
+    return string
 
 
-def correct_spacing(str):
-    return re.sub(' +', ' ', str)
+def correct_spacing(string):
+    return re.sub(' +', ' ', string)
 
 
-def clean(str):
+def clean(string):
     return correct_casing(
         correct_spacing(
-            str
+            string
         )
     )
 
@@ -100,8 +99,8 @@ def get_viols(client):
 def handler(event, context):
     config = KMS()
     db = Dynamo(config)
-    sqs = SQS(config)
     foursquare = Fs(config)
+    twitter = Twitter(config)
 
     client = Socrata(
         domain='data.cityofboston.gov',
@@ -129,14 +128,14 @@ def handler(event, context):
                 lon=lon
             )
 
-            photo = None
-
             if place:
                 photo_url = foursquare.random_photo_url(place)
 
-            sqs.push(viol[':id'], text, photo_url, lat, lon)
+            twitter.tweet(text, photo_url, lat, lon)
 
             db.save(viol[':id'], viol['licenseno'])
+
+            break
         else:
             print('Violation already known to Dynamo')
 

@@ -1,4 +1,2 @@
 *.zip
 *.pyc
-secrets/dev/*
-viewer/node_modules
