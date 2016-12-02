@@ -1,4 +1,4 @@
--e git://github.com/xmunoz/sodapy.git@48634ace707432bac5ca0161b10cdcd7ad43fc62#egg=sodapy
+sodapy==1.4.2
 boto3==1.2.3
 botocore==1.3.15
 titlecase==0.8.0
