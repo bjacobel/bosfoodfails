@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from datetime import datetime, timedelta
-from sodapy import Socrata
+from ckanapi import RemoteCKAN
 from titlecase import titlecase
 from random import shuffle
 import re
@@ -39,16 +39,16 @@ def ordinal(n):
 
 
 def format_url(viol):
-    return "https://bosfoodfails.bjacobel.com/#/{}".format(viol[':id'])
+    return "https://bosfoodfails.bjacobel.com/#/{}".format(viol['_id'])
 
 
 def format_msg(viol, count, reason_url):
     return u'{bn} ({address}, {city}) failed check for the {ord} time. Details: {url}'.format(
-        bn = clean(viol[u'businessname']),
-        address = clean(viol[u'address']),
-        city = clean(viol[u'city']),
-        ord = ordinal(count + 1),
-        url = reason_url
+        bn=clean(viol[u'businessName']),
+        address=clean(viol[u'Address']),
+        city=clean(viol[u'CITY']),
+        ord=ordinal(count + 1),
+        url=reason_url
     )
 
 
@@ -56,14 +56,11 @@ def extract_geo(viol):
     lat = None
     lon = None
 
-    if u'location' in viol:
-        # This appears to be in the API in two different structures?
-        if 'longitude' in viol['location'] and 'latitude' in viol['location']:
-            lat = viol[u'location'][u'latitude']
-            lon = viol[u'location'][u'longitude']
-        elif 'coordinates' in viol['location']:
-            lat = viol['location']['coordinates'][1]
-            lon = viol['location']['coordinates'][0]
+    if u'Location' in viol and viol['Location']:
+        print(viol['Location'])
+        match = re.match('\((\d+\.\d+), (-\d+\.\d+)\)', viol['Location'])
+        lat = float(match.group(1))
+        lon = float(match.group(2))
 
     return lat, lon
 
@@ -76,18 +73,19 @@ def get_viols(client):
         minutes=now.minute,
         hours=now.hour
     )
-    yesterday_begin = today_begin - timedelta(days=1)
+    yesterday_begin = today_begin - timedelta(days=7)
 
-    where_clause = (
-        'violstatus = \'Fail\' AND '
-        'violdttm between \'{}\' and \'{}\' AND '
-        'viollevel in("**", "***")'
-    ).format(
-        yesterday_begin.isoformat(),
-        today_begin.isoformat()
-    )
-
-    viols = client.get('427a-3cn5', where=where_clause, select=":*, *")
+    viols = client.action.datastore_search_sql(
+        sql=(
+            'SELECT * FROM "4582bec6-2b4f-4f9e-bc55-cbaa73117f4c" WHERE '
+            '"ViolStatus" = \'Fail\' AND'
+            '"VIOLDTTM" between \'{}\' and \'{}\' AND '
+            '"ViolLevel" in(\'**\', \'***"\')'
+        ).format(
+            yesterday_begin.isoformat(),
+            today_begin.isoformat()
+        )
+    )['records']
 
     print('Got {} violations'.format(len(viols)))
 
@@ -102,12 +100,7 @@ def handler(event, context):
     foursquare = Fs(config)
     twitter = Twitter(config)
 
-    client = Socrata(
-        domain='data.cityofboston.gov',
-        app_token=config.SocrataAppToken,
-        username='bjacobel@gmail.com',
-        password=config.SocrataPassword
-    )
+    client = RemoteCKAN('https://data.boston.gov')
 
     viols = get_viols(client)
 
@@ -115,25 +108,27 @@ def handler(event, context):
 
     for viol in viols:
 
-        if not db.query(viol[':id']):
+        if not db.query(viol['_id']):
 
-            count = db.count(viol['licenseno'])
+            count = db.count(viol['LICENSENO'])
             url = format_url(viol)
             text = format_msg(viol, count, url)
             (lat, lon) = extract_geo(viol)
 
             place = foursquare.place_search(
-                name=viol['businessname'],
+                name=viol['businessName'],
                 lat=lat,
                 lon=lon
             )
+
+            photo_url = None
 
             if place:
                 photo_url = foursquare.random_photo_url(place)
 
             twitter.tweet(text, photo_url, lat, lon)
 
-            db.save(viol[':id'], viol['licenseno'])
+            db.save(viol['_id'], viol['LICENSENO'])
 
             break
         else:

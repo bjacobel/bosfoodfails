@@ -3,7 +3,7 @@ import os
 
 class KMS:
     def __init__(self):
-        self.dev = os.getcwd() == '/Users/bjacobel/code/bosfoodfails'
+        self.dev = os.getcwd() == '/Users/bjacobel/code/personal/bosfoodfails'
 
         kms = boto3.client('kms')
         cwd = os.getcwd()
