@@ -73,7 +73,7 @@ def get_viols(client):
         minutes=now.minute,
         hours=now.hour
     )
-    yesterday_begin = today_begin - timedelta(days=7)
+    yesterday_begin = today_begin - timedelta(days=1)
 
     viols = client.action.datastore_search_sql(
         sql=(
