@@ -12,7 +12,7 @@ class Dynamo:
             TableName=self.config.DynamoTableName,
             Item={
                 'id': {
-                    'S': viol_id
+                    'S': str(viol_id)
                 },
                 'license': {
                     'S': license_id
@@ -27,7 +27,7 @@ class Dynamo:
             TableName=self.config.DynamoTableName,
             Key={
                 'id': {
-                    'S': viol_id
+                    'S': str(viol_id)
                 }
             }
         )
