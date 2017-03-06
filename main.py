@@ -79,11 +79,11 @@ def get_viols(client):
         sql=(
             'SELECT * FROM "4582bec6-2b4f-4f9e-bc55-cbaa73117f4c" WHERE '
             '"ViolStatus" = \'Fail\' AND'
-            '"VIOLDTTM" between \'{}\' and \'{}\' AND '
+            '"VIOLDTTM" between \'{}\' and \'{}\' AND'
             '"ViolLevel" in(\'**\', \'***"\')'
         ).format(
-            yesterday_begin.isoformat(),
-            today_begin.isoformat()
+            yesterday_begin.isoformat(' '),
+            today_begin.isoformat(' ')
         )
     )['records']
 
