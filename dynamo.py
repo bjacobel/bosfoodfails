@@ -32,7 +32,7 @@ class Dynamo:
             }
         )
 
-        if 'Item' in resp and resp['Item']['id']['S'] == viol_id:
+        if 'Item' in resp and resp['Item']['id']['S'] == str(viol_id):
             return True
         return False
 
